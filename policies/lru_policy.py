@@ -12,23 +12,22 @@ class LRUPolicy(Policy):
         super().__init__(capacity)
         self._usage_map = dict()
 
-    """
-    Updates the cache with the new request.
-    """
-    def serve_request(self, request: int) -> None:
-        if self.is_present(request):
-            self._usage_map[request] += self.time
-
-        super().serve_request(request)
-
     @staticmethod
     def get_name() -> str:
         return "LRU Policy"
 
     """
+    Learns from the request. Updates the usage map.
+    """
+    def learn(self, request: int):
+        assert request in self.cache
+        self._usage_map[request] = self.time
+
+    """
     Adds an item to a cache, assumes that the cache is not full.
     """
     def add_item(self, item: int) -> None:
+        assert item not in self.cache
         super().add_item(item)
         self._usage_map[item] = self.time
 

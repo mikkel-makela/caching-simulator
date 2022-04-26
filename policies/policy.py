@@ -9,18 +9,12 @@ class Policy:
     cache: np.ndarray
 
     """
-    Cache capacity.
-    """
-    capacity: int
-
-    """
     Current time.
     """
     time: int
 
     def __init__(self, capacity: int):
         self.time = 1
-        self.capacity = capacity
         self.cache = np.empty(capacity, dtype=object)
 
     @staticmethod
@@ -38,13 +32,14 @@ class Policy:
 
             self.add_item(request)
 
+        self.learn(request)
         self._advance_time()
 
     """
     Resets the cache, deleting all entries.
     """
     def reset(self) -> None:
-        self.cache = np.empty(self.capacity, dtype=object)
+        self.cache = np.empty(len(self.cache), dtype=object)
         self.time = 1
 
     """
@@ -85,6 +80,12 @@ class Policy:
     """
     def _advance_time(self) -> None:
         self.time += 1
+
+    """
+    Makes changes to its model from the new request.
+    """
+    def learn(self, request: int) -> None:
+        pass
 
     """
     Get the item to be popped.

@@ -4,6 +4,16 @@ from policies.policy import Policy
 
 
 class ExpertAdaptedPolicy:
+    """
+    Uses two caches to return eviction advice.
+
+    Mirror cache - a cache that is kept equivalent to the policy using this expert. This cache must be changed
+    via proxy methods for adding and removing items, because calling the main serve_request method would evict a
+    custom item.
+
+    Virtual cache - a cache that operates normally like the policy it belongs should. Used to measure the loss of
+    the expert.
+    """
 
     mirror_policy: Policy
     virtual_policy: Policy
@@ -20,15 +30,18 @@ class ExpertAdaptedPolicy:
     def evict_item_from_mirror_cache(self, item: int) -> None:
         self.mirror_policy.remove_item_from_cache(item)
 
-    def process_request(self, item: int) -> None:
-        self._update_mirroring_cache(item)
-        self._update_virtual_cache(item)
-
     def can_virtual_cache_serve_request(self, item: int) -> bool:
         return self.virtual_policy.is_present(item)
 
-    def _update_mirroring_cache(self, item: int) -> None:
+    def add_item_to_mirroring_cache(self, item: int) -> None:
         self.mirror_policy.add_item(item)
 
-    def _update_virtual_cache(self, item: int) -> None:
+    def learn_from_request(self, item: int) -> None:
         self.virtual_policy.serve_request(item)
+        self.mirror_policy.learn(item)
+
+    def reset(self) -> None:
+        self.virtual_policy.reset()
+        self.mirror_policy.reset()
+        self.loss = 0
+

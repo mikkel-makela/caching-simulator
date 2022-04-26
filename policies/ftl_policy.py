@@ -1,5 +1,7 @@
 from statistics import mode
 
+import numpy as np
+
 from policies.expert_policy import ExpertPolicy
 from policies.policy import Policy
 
@@ -9,8 +11,8 @@ class FTLPolicy(ExpertPolicy):
     Follows the expert that has the smallest loss.
     """
 
-    def __init__(self, capacity: int, policies: [Policy]):
-        super().__init__(capacity, policies)
+    def __init__(self, capacity: int, policies: [Policy], initial_losses: np.ndarray = None):
+        super().__init__(capacity, policies, initial_losses)
 
     @staticmethod
     def get_name() -> str:
@@ -31,3 +33,11 @@ class FTLPolicy(ExpertPolicy):
         for expert in self.experts:
             if not expert.can_virtual_cache_serve_request(request):
                 expert.loss += 1
+
+    """
+    Resets the policy and all experts.
+    """
+    def reset(self) -> None:
+        super().reset()
+        for expert in self.experts:
+            expert.reset()

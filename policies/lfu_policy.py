@@ -17,13 +17,11 @@ class LFUPolicy(Policy):
         return "LFU Policy"
 
     """
-    Updates the cache with the new request.
+    Learns from the request. Updates the frequency map.
     """
-    def serve_request(self, request: int) -> None:
+    def learn(self, request: int):
         if self.is_present(request):
             self._frequency_map[request] += 1
-
-        super().serve_request(request)
 
     """
     Adds an item to a cache, assumes that the cache is not full.
