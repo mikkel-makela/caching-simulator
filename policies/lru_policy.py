@@ -28,6 +28,7 @@ class LRUPolicy(Policy):
     """
     def add_item(self, item: int) -> None:
         assert item not in self.cache
+        assert not self.is_full()
         super().add_item(item)
         self._usage_map[item] = self.time
 

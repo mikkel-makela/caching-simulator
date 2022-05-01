@@ -33,11 +33,12 @@ class ExpertAdaptedPolicy:
     def can_virtual_cache_serve_request(self, item: int) -> bool:
         return self.virtual_policy.is_present(item)
 
-    def add_item_to_mirroring_cache(self, item: int) -> None:
+    def add_item_to_mirror_cache(self, item: int) -> None:
         self.mirror_policy.add_item(item)
 
     def learn_from_request(self, item: int) -> None:
         self.virtual_policy.serve_request(item)
+        # Mirror policy does not always have the item it is supposed to learn from.
         self.mirror_policy.learn(item)
 
     def reset(self) -> None:

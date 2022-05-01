@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-MAX_ROWS: int or None = 100_000
+MAX_ROWS: int or None = 1000
 
 
 @dataclass

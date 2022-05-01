@@ -28,8 +28,8 @@ class Policy:
         if not self.is_present(request):
             if self.is_full():
                 self.evict_item()
-                assert not self.is_full()
 
+            assert not self.is_full()
             self.add_item(request)
 
         self.learn(request)

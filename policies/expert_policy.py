@@ -30,12 +30,12 @@ class ExpertPolicy(Policy):
             expert.learn_from_request(request)
 
     """
-    Evicts item from own and all expert mirroring caches. Records the eviction to compute losses.
+    Removes item from own and all expert mirroring caches.
     """
-    def evict_item(self) -> None:
-        victim_item = super().evict_item()
+    def remove_item_from_cache(self, item: int) -> int:
         for expert in self.experts:
-            expert.evict_item_from_mirror_cache(victim_item)
+            expert.evict_item_from_mirror_cache(item)
+        return super().remove_item_from_cache(item)
 
     """
     Adds an item to own and all expert caches.
@@ -44,7 +44,7 @@ class ExpertPolicy(Policy):
         assert not self.is_full()
         super().add_item(item)
         for expert in self.experts:
-            expert.add_item_to_mirroring_cache(item)
+            expert.add_item_to_mirror_cache(item)
 
     """
     Records losses based on whether the request can be served.
