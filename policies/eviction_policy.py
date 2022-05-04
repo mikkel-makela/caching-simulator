@@ -11,8 +11,8 @@ class EvictionPolicy(Policy):
     """
     Updates the cache with the new request.
     """
-    def serve_request(self, request: int) -> None:
-        super().serve_request(request)
+    def update(self, request: int) -> None:
+        super().update(request)
         if not self.is_present(request):
             if self.is_full():
                 self.evict_item()

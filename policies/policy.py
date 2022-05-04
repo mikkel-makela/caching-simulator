@@ -24,7 +24,7 @@ class Policy:
     """
     Updates the cache based on the new request.
     """
-    def serve_request(self, request: int) -> None:
+    def update(self, request: int) -> None:
         self.advance_time()
 
     """

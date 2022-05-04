@@ -37,7 +37,7 @@ class ExpertAdaptedPolicy:
         self.mirror_policy.add_item(item)
 
     def learn_from_request(self, item: int) -> None:
-        self.virtual_policy.serve_request(item)
+        self.virtual_policy.update(item)
         # Mirror policy does not always have the item it is supposed to learn from.
         self.mirror_policy.learn(item)
 

@@ -31,7 +31,7 @@ def _run_simulation(
     hit_miss_logs = np.zeros((catalog_size + 1, 2))
     for request in trace[0:time_horizon]:
         hit_miss_logs[request][0 if policy.is_present(request) else 1] += 1
-        policy.serve_request(request)
+        policy.update(request)
 
     return SimulationStatistics(
         np.array(list(map(lambda x: _get_hit_ratio(x[0], x[1]), hit_miss_logs))),

@@ -22,9 +22,9 @@ class ExpertPolicy(EvictionPolicy):
     """
     Updates the cache with the new request.
     """
-    def serve_request(self, request: int) -> None:
+    def update(self, request: int) -> None:
         self.record_losses(request)
-        super().serve_request(request)
+        super().update(request)
 
     """
     Learns from the request. Updates the experts.

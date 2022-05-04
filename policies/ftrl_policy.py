@@ -25,10 +25,10 @@ class FTRLPolicy(Policy):
         return "FTRL Policy"
 
     """
-    Updates the request counts and reloads cache based on it.
+    Updates the request counts and loads a new cache based on it.
     """
-    def serve_request(self, request: int) -> None:
-        super().serve_request(request)
+    def update(self, request: int) -> None:
+        super().update(request)
         self._file_request_counts[request] += 1
         self.cache = self.get_updated_cache()
 

@@ -40,7 +40,7 @@ class CacheNode:
             self.parent.process_request(request.get_with_incremented_cost(self._parent_reach_cost))
 
         self.update_logs(request.catalog_item)
-        self.policy.serve_request(request.catalog_item)
+        self.policy.update(request.catalog_item)
         self.lock.release()
 
     def update_logs(self, item: int):
