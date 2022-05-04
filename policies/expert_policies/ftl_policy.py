@@ -1,30 +1,25 @@
-from statistics import mode
-
-import numpy as np
-
-from policies.expert_policy import ExpertPolicy
-from policies.policy import Policy
+from policies.expert_policies.expert_adapter.expert_adapter import ExpertAdaptedPolicy
+from policies.expert_policies.expert_policy import ExpertPolicy
+from policies.eviction_policy import EvictionPolicy
 
 
-class FTLPolicy(ExpertPolicy):
+class ExpertFTLPolicy(ExpertPolicy):
     """
     Follows the expert that has the smallest loss.
     """
 
-    def __init__(self, capacity: int, policies: [Policy], initial_losses: np.ndarray = None):
-        super().__init__(capacity, policies, initial_losses)
+    def __init__(self, capacity: int, policies: [EvictionPolicy]):
+        super().__init__(capacity, policies)
 
     @staticmethod
     def get_name() -> str:
-        return "FTL Policy"
+        return "Expert FTL Policy"
 
     """
     Selects the victim from expert advice, chooses the expert with the smallest loss.
     """
     def get_victim(self) -> int:
-        min_loss = min(self.experts, key=lambda e: e.loss).loss
-        leaders = list(filter(lambda e: e.loss == min_loss, self.experts))
-        return mode(list(map(lambda l: l.get_eviction_advice(), leaders)))
+        return self.get_min_loss_expert().get_eviction_advice()
 
     """
     Records losses based on whether the request can be served.
@@ -33,6 +28,12 @@ class FTLPolicy(ExpertPolicy):
         for expert in self.experts:
             if not expert.can_virtual_cache_serve_request(request):
                 expert.loss += 1
+
+    """
+    Gets the expert with the minimum loss.
+    """
+    def get_min_loss_expert(self) -> ExpertAdaptedPolicy:
+        return min(self.experts, key=lambda e: e.loss)
 
     """
     Resets the policy and all experts.

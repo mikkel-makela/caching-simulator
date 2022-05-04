@@ -1,7 +1,7 @@
-from policies.ftpl_policy import FTPLPolicy
+from policies.expert_policies.ftpl_policy import ExpertFTPLPolicy
 from policies.lfu_policy import LFUPolicy
 from policies.lru_policy import LRUPolicy
 
 
 def get_ftpl_policy(size: int):
-    return FTPLPolicy(size, [LRUPolicy(size), LFUPolicy(size)])
+    return ExpertFTPLPolicy(size, [LRUPolicy(size), LFUPolicy(size)])

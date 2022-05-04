@@ -22,18 +22,10 @@ class Policy:
         pass
 
     """
-    Updates the cache with the new request.
+    Updates the cache based on the new request.
     """
     def serve_request(self, request: int) -> None:
-        if not self.is_present(request):
-            if self.is_full():
-                self.evict_item()
-
-            assert not self.is_full()
-            self.add_item(request)
-
-        self.learn(request)
-        self._advance_time()
+        self.advance_time()
 
     """
     Resets the cache, deleting all entries.
@@ -43,31 +35,10 @@ class Policy:
         self.time = 1
 
     """
-    Evicts an item from the cache.
+    Checks if a file is present in the cache.
     """
-    def evict_item(self) -> int:
-        victim = self.get_victim()
-        return self.remove_item_from_cache(victim)
-
-    """
-    Removes the item from the cache array.
-    """
-    def remove_item_from_cache(self, item: int) -> int:
-        self.cache[np.where(self.cache == item)] = None
-        return item
-
-    """
-    Adds an item to a cache, assumes that the cache is not full.
-    """
-    def add_item(self, item: int) -> None:
-        assert not self.is_full()
-        self.cache[np.where(self.cache == None)[0][0]] = item
-
-    """
-    Checks if an item is present in the cache.
-    """
-    def is_present(self, item: int) -> bool:
-        return item in self.cache
+    def is_present(self, file: int) -> bool:
+        return file in self.cache
 
     """
     Checks if the cache is full, i.e if it has any None elements which represent free slots.
@@ -78,18 +49,5 @@ class Policy:
     """
     Advances time.
     """
-    def _advance_time(self) -> None:
+    def advance_time(self) -> None:
         self.time += 1
-
-    """
-    Makes changes to its model from the new request.
-    """
-    def learn(self, request: int) -> None:
-        pass
-
-    """
-    Get the item to be popped.
-    """
-    def get_victim(self) -> int:
-        pass
-

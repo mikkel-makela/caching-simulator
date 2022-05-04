@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-MAX_ROWS: int or None = 1000
+TRACE_LENGTH: int or None = 100_000
 
 
 @dataclass
@@ -19,7 +19,7 @@ class MovielensColumns:
 
 
 def load_movie_lens(file_path: str) -> Dataset:
-    df = pd.read_csv(file_path, usecols=[MovielensColumns.timestamp, MovielensColumns.movie_id], nrows=MAX_ROWS)
+    df = pd.read_csv(file_path, usecols=[MovielensColumns.timestamp, MovielensColumns.movie_id], nrows=TRACE_LENGTH)
     df.sort_values(by=MovielensColumns.timestamp, ascending=True)
     return Dataset(
         catalog_size=df[MovielensColumns.movie_id].max(),

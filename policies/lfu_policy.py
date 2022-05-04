@@ -1,7 +1,7 @@
-from policies.policy import Policy
+from policies.eviction_policy import EvictionPolicy
 
 
-class LFUPolicy(Policy):
+class LFUPolicy(EvictionPolicy):
 
     """
     Map that maps an item to a how many times it has been used.

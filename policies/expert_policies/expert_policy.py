@@ -2,17 +2,21 @@ from typing import List
 
 import numpy as np
 
-from policies.expert_adapter.expert_adapter import ExpertAdaptedPolicy
-from policies.policy import Policy
+from policies.expert_policies.expert_adapter.expert_adapter import ExpertAdaptedPolicy
+from policies.eviction_policy import EvictionPolicy
 
 
-class ExpertPolicy(Policy):
+class ExpertPolicy(EvictionPolicy):
+    """
+    Keeps a list of policies that have virtual caches which serve requests normally, and mirror caches which
+    are adapted to serve requests such that cache contents are equal to the expert policy.
+    """
 
     experts: List[ExpertAdaptedPolicy]
 
-    def __init__(self, capacity: int, policies: List[Policy], initial_losses: np.ndarray = None):
+    def __init__(self, capacity: int, policies: List[EvictionPolicy]):
         super().__init__(capacity)
-        initial_losses = np.zeros(len(policies)) if initial_losses is None else initial_losses
+        initial_losses = np.zeros(len(policies))
         self.experts = list(map(lambda pair: ExpertAdaptedPolicy(pair[0], pair[1]), zip(policies, initial_losses)))
 
     """

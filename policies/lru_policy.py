@@ -1,7 +1,7 @@
-from policies.policy import Policy
+from policies.eviction_policy import EvictionPolicy
 
 
-class LRUPolicy(Policy):
+class LRUPolicy(EvictionPolicy):
 
     """
     Map that maps an item to a time slot when it was last used.
@@ -22,15 +22,6 @@ class LRUPolicy(Policy):
     def learn(self, request: int):
         assert request in self.cache
         self._usage_map[request] = self.time
-
-    """
-    Adds an item to a cache, assumes that the cache is not full.
-    """
-    def add_item(self, item: int) -> None:
-        assert item not in self.cache
-        assert not self.is_full()
-        super().add_item(item)
-        self._usage_map[item] = self.time
 
     """
     Removes the item from the cache that has been least recently used.

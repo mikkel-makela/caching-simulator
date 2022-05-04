@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from policies.policy import Policy
+from policies.eviction_policy import EvictionPolicy
 
 
 class ExpertAdaptedPolicy:
@@ -15,11 +15,11 @@ class ExpertAdaptedPolicy:
     the expert.
     """
 
-    mirror_policy: Policy
-    virtual_policy: Policy
+    mirror_policy: EvictionPolicy
+    virtual_policy: EvictionPolicy
     loss: float
 
-    def __init__(self, policy: Policy, initial_loss: float):
+    def __init__(self, policy: EvictionPolicy, initial_loss: float):
         self.mirror_policy = policy
         self.virtual_policy = deepcopy(policy)
         self.loss = initial_loss

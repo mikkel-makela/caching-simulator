@@ -4,28 +4,28 @@ import threading
 from typing import List
 
 from nodes.request import Request
-from policies.policy import Policy
+from policies.eviction_policy import EvictionPolicy
 from simulation.simulation_statistics import HitMissLogs
 
 
 class CacheNode:
 
     _parent_reach_cost: float
-    policy: Policy
+    policy: EvictionPolicy
     parent: CacheNode or None = None  # None represents the main data store
     children: List[CacheNode]
     absorbed_system_cost: float
     hit_miss_logs: HitMissLogs
     lock: threading.Lock  # Used to make request handling thread safe
 
-    def __init__(self, parent_reach_cost: float, policy: Policy, children: List[CacheNode]):
+    def __init__(self, parent_reach_cost: float, policy: EvictionPolicy, children=None):
         self._parent_reach_cost = parent_reach_cost
         self.policy = policy
-        self.children = children
+        self.children = [] if children is None else children
         self.lock = threading.Lock()
         self.hit_miss_logs = HitMissLogs()
         self.absorbed_system_cost = 0
-        for child in children:
+        for child in self.children:
             child.parent = self
 
     def process_request(self, request: Request):
