@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-TRACE_LENGTH: int or None = 100_000
+TRACE_LENGTH: int or None = 10_000
 
 
 @dataclass

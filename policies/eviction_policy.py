@@ -4,6 +4,9 @@ from policies.policy import Policy
 
 
 class EvictionPolicy(Policy):
+    """
+    Abstract class for policies that make single evictions when their caches become full.
+    """
 
     def __init__(self, capacity: int):
         super().__init__(capacity)
@@ -18,7 +21,7 @@ class EvictionPolicy(Policy):
                 self.evict_item()
 
             assert not self.is_full()
-            self.add_item(request)
+            self.add_file(request)
 
         self.learn(request)
 
@@ -27,21 +30,21 @@ class EvictionPolicy(Policy):
     """
     def evict_item(self) -> int:
         victim = self.get_victim()
-        return self.remove_item_from_cache(victim)
+        return self.remove_file_from_cache(victim)
 
     """
     Removes the item from the cache array.
     """
-    def remove_item_from_cache(self, item: int) -> int:
-        self.cache[np.where(self.cache == item)] = None
-        return item
+    def remove_file_from_cache(self, file: int) -> int:
+        self.cache[np.where(self.cache == file)] = None
+        return file
 
     """
     Adds an item to a cache, assumes that the cache is not full.
     """
-    def add_item(self, item: int) -> None:
+    def add_file(self, file: int) -> None:
         assert not self.is_full()
-        self.cache[np.where(self.cache == None)[0][0]] = item
+        self.cache[np.where(self.cache == None)[0][0]] = file
 
     """
     Get the item to be popped.

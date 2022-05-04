@@ -4,7 +4,7 @@ from policies.eviction_policy import EvictionPolicy
 class LFUPolicy(EvictionPolicy):
 
     """
-    Map that maps an item to a how many times it has been used.
+    Map that maps a file to a how many times it has been used.
     """
     _frequency_map: dict[int, int]
 
@@ -26,16 +26,16 @@ class LFUPolicy(EvictionPolicy):
     """
     Adds an item to a cache, assumes that the cache is not full.
     """
-    def add_item(self, item: int) -> None:
-        super().add_item(item)
-        self._frequency_map[item] = 0
+    def add_file(self, file: int) -> None:
+        super().add_file(file)
+        self._frequency_map[file] = 0
 
     """
     Removes the item from the cache that has been least frequently used.
     """
-    def remove_item_from_cache(self, item: int) -> int:
-        self._frequency_map.pop(item)
-        return super().remove_item_from_cache(item)
+    def remove_file_from_cache(self, file: int) -> int:
+        self._frequency_map.pop(file)
+        return super().remove_file_from_cache(file)
 
     """
     Resets the cache, deleting all entries.

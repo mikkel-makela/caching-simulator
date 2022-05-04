@@ -27,19 +27,19 @@ class ExpertAdaptedPolicy:
     def get_eviction_advice(self) -> int:
         return self.mirror_policy.get_victim()
 
-    def evict_item_from_mirror_cache(self, item: int) -> None:
-        self.mirror_policy.remove_item_from_cache(item)
+    def evict_file_from_mirror_cache(self, file: int) -> None:
+        self.mirror_policy.remove_file_from_cache(file)
 
-    def can_virtual_cache_serve_request(self, item: int) -> bool:
-        return self.virtual_policy.is_present(item)
+    def can_virtual_cache_serve_request(self, file: int) -> bool:
+        return self.virtual_policy.is_present(file)
 
-    def add_item_to_mirror_cache(self, item: int) -> None:
-        self.mirror_policy.add_item(item)
+    def add_file_to_mirror_cache(self, file: int) -> None:
+        self.mirror_policy.add_file(file)
 
-    def learn_from_request(self, item: int) -> None:
-        self.virtual_policy.update(item)
-        # Mirror policy does not always have the item it is supposed to learn from.
-        self.mirror_policy.learn(item)
+    def learn_from_request(self, file: int) -> None:
+        self.virtual_policy.update(file)
+        # Mirror policy does not always have the file it is supposed to learn from.
+        self.mirror_policy.learn(file)
 
     def reset(self) -> None:
         self.virtual_policy.reset()

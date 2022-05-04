@@ -38,5 +38,9 @@ class FTRLPolicy(Policy):
     the permutation constant.
     """
     def get_updated_cache(self) -> np.ndarray:
-        perturbed_counts = self._file_request_counts + np.random.normal(loc=0, scale=1) * self._permutation_constant
+        perturbed_counts = self._file_request_counts + np.random.normal(
+            loc=0,
+            scale=self._permutation_constant,
+            size=self._file_request_counts.size
+        )
         return np.argsort(-perturbed_counts)[:self._capacity]
