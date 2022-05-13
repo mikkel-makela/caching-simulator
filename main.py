@@ -1,11 +1,8 @@
-from typing import List, Iterable
+import random
+from typing import List
 
-from data.loader import load_movie_lens
-from factories.cache_factory import get_ftpl_policy
-from nodes.cache_system import CacheSystem
-from nodes.cache_node import CacheNode
-from policies.expert_policies.ftl_policy import ExpertFTLPolicy
-from policies.expert_policies.ftpl_policy import ExpertFTPLPolicy
+from data.loaders import load_movielens, load_bipartite_movielens
+from factories.cache_factory import get_bipartite_system_from_dataset
 from policies.ftrl_policy import FTRLPolicy
 from policies.lfu_policy import LFUPolicy
 from policies.lru_policy import LRUPolicy
@@ -13,7 +10,10 @@ from policies.policy import Policy
 from simulation.simulation_parameters import SimulationParameters
 from simulation.simulation_runner import SimulationRunner
 from simulation.simulation_statistics import SimulationStatistics, HierarchicalSimulationStatistics
-from utilities import print_multi_level_statistics, print_single_level_statistics
+from utilities import display_multi_level_statistics, display_single_level_statistics
+
+
+random.seed(42)
 
 
 class DataPath:
@@ -21,42 +21,29 @@ class DataPath:
     MOVIE_LENS = f'{_shared_path}ml_25m.csv'
 
 
-dataset = load_movie_lens(DataPath.MOVIE_LENS)
-catalog_size = dataset.catalog_size
-
-
 def run_single_cache_simulation():
+    dataset = load_movielens(DataPath.MOVIE_LENS)
     cache_size = 50
     policies: List[Policy] = [
         LRUPolicy(cache_size),
         LFUPolicy(cache_size),
-        FTRLPolicy(cache_size, dataset.catalog_size, len(dataset.trace)),
+        FTRLPolicy(cache_size, dataset.catalog_size, dataset.trace.size),
         # ExpertFTLPolicy(cache_size, [LRUPolicy(cache_size), LFUPolicy(cache_size)]),
         # ExpertFTPLPolicy(cache_size, [LRUPolicy(cache_size), LFUPolicy(cache_size)])
     ]
 
     runner = SimulationRunner(threads=len(policies))
-    parameters = SimulationParameters(catalog_size, dataset.trace, policies)
-    statistics: Iterable[SimulationStatistics] = runner.run_simulations(parameters)
-    print_single_level_statistics(statistics)
+    parameters = SimulationParameters(dataset.trace, policies)
+    statistics: List[SimulationStatistics] = runner.run_simulations(parameters)
+    display_single_level_statistics(statistics)
 
 
 def run_multi_cache_simulation():
-    system = CacheSystem([
-        CacheNode(5.0, get_ftpl_policy(500), children=[
-            CacheNode(3.0, get_ftpl_policy(50)),
-            CacheNode(7.0, get_ftpl_policy(50)),
-            CacheNode(2.0, get_ftpl_policy(50))
-        ]),
-        CacheNode(10.0, get_ftpl_policy(500), children=[
-            CacheNode(2.0, get_ftpl_policy(50)),
-            CacheNode(1.0, get_ftpl_policy(50)),
-            CacheNode(3.0, get_ftpl_policy(50))
-        ])
-    ])
-    runner = SimulationRunner(threads=6)
-    statistics: HierarchicalSimulationStatistics = runner.run_hierarchical_simulations(system, dataset.trace)
-    print_multi_level_statistics(statistics)
+    datasets = load_bipartite_movielens(DataPath.MOVIE_LENS)
+    system = get_bipartite_system_from_dataset(datasets, 50, d_regular_degree=8)
+    runner = SimulationRunner(threads=min([len(system.clients), 10]))
+    statistics: HierarchicalSimulationStatistics = runner.run_bipartite_simulations(system, datasets)
+    display_multi_level_statistics(statistics)
 
 
 def main():

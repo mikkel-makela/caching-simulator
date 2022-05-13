@@ -1,25 +1,22 @@
 from concurrent.futures import ThreadPoolExecutor, Future
-from typing import Iterable, List
+from typing import List
 
 import numpy as np
 
 from nodes.cache_system import CacheSystem
-from nodes.cache_node import CacheNode
-from nodes.request import Request
+from nodes.node import Node
 from policies.policy import Policy
 from simulation.simulation_parameters import SimulationParameters
 from simulation.simulation_statistics import SimulationStatistics, HierarchicalSimulationStatistics, HitRatioTree
+from utilities import get_hit_ratio
 
 
-def _get_hit_ratio(hits, misses) -> float:
-    assert hits >= 0
-    assert misses >= 0
-    total = hits + misses
-    return 0 if total == 0 else hits / total
+def _get_optimal_static_configuration_hits(trace: np.ndarray, cache_size: int, time: int) -> int:
+    _, counts = np.unique(trace[:time], return_counts=True)
+    return int(np.sum(-np.sort(-counts)[:cache_size]))
 
 
 def _run_simulation(
-        catalog_size: int,
         trace: np.ndarray,
         time_horizon: int,
         policy: Policy
@@ -28,30 +25,33 @@ def _run_simulation(
     assert trace.size > 0
     assert policy is not None
 
-    hit_miss_logs = np.zeros((catalog_size + 1, 2))
-    for request in trace[0:time_horizon]:
-        hit_miss_logs[request][0 if policy.is_present(request) else 1] += 1
+    hits = misses = 0
+    regret = np.zeros(time_horizon)
+    hit_ratio = np.zeros(time_horizon)
+    for time, request in enumerate(trace[0:time_horizon], start=1):
+        if policy.is_present(request):
+            hits += 1
+        else:
+            misses += 1
+        regret[time - 1] = (_get_optimal_static_configuration_hits(trace, policy.cache.size, time) - hits) / time
+        hit_ratio[time - 1] = get_hit_ratio(hits, misses)
         policy.update(request)
 
     return SimulationStatistics(
-        np.array(list(map(lambda x: _get_hit_ratio(x[0], x[1]), hit_miss_logs))),
-        sum(log[0] for log in hit_miss_logs) / time_horizon,
-        policy.get_name()
+        get_hit_ratio(hits, misses),
+        policy.get_name(),
+        regret,
+        hit_ratio
     )
 
 
-def _run_hierarchical_simulation(trace: np.ndarray, cache: CacheNode) -> None:
-    for request in trace:
-        cache.process_request(Request(request))
-
-
 def _get_hierarchical_statistics(cache_system: CacheSystem) -> HierarchicalSimulationStatistics:
-    def get_trees(nodes: List[CacheNode], level=1) -> List[HitRatioTree]:
+    def get_trees(nodes: List[Node], level=1) -> List[HitRatioTree]:
         return list(
             map(
                 lambda n: HitRatioTree(
                     get_trees(n.children, level + 1),
-                    _get_hit_ratio(n.hit_miss_logs.hits, n.hit_miss_logs.misses),
+                    get_hit_ratio(n.hit_miss_logs.hits, n.hit_miss_logs.misses),
                     f'{n.policy.get_name()}, Level {level}'
                 ),
                 nodes
@@ -59,7 +59,7 @@ def _get_hierarchical_statistics(cache_system: CacheSystem) -> HierarchicalSimul
         )
 
     return HierarchicalSimulationStatistics(
-        HitRatioTree(get_trees(cache_system.first_layer_nodes), 1.0, "Main Storage, Level 0"),
+        HitRatioTree(get_trees(cache_system.main_server.children), 1.0, "Main Storage, Level 0"),
         cache_system.get_absorbed_cost()
     )
 
@@ -71,30 +71,28 @@ class SimulationRunner:
         assert threads >= 1
         self._executor = ThreadPoolExecutor(max_workers=threads)
 
-    def run_simulations(self, parameters: SimulationParameters) -> Iterable[SimulationStatistics]:
+    def run_simulations(self, parameters: SimulationParameters) -> List[SimulationStatistics]:
         assert parameters is not None
         assert parameters.policies is not None and len(parameters.policies) > 0
 
         futures: List[Future] = [
-            self._executor.submit(_run_simulation, parameters.catalog_size, parameters.trace, parameters.time, policy)
+            self._executor.submit(_run_simulation, parameters.trace, parameters.time, policy)
             for policy in parameters.policies
         ]
 
-        return map(lambda f: f.result(), futures)
+        return list(map(lambda f: f.result(), futures))
 
-    def run_hierarchical_simulations(
+    def run_bipartite_simulations(
             self,
             cache_system: CacheSystem,
-            trace: np.ndarray
+            datasets: np.ndarray
     ) -> HierarchicalSimulationStatistics:
         assert cache_system is not None
-        assert trace.size > 0
-        caches = cache_system.get_leaf_nodes()
-        traces = np.array_split(trace, len(caches))
+        assert len(cache_system.clients) == datasets.size
 
         futures: List[Future] = [
-            self._executor.submit(_run_hierarchical_simulation, trace, cache)
-            for trace, cache in zip(traces, caches)
+            self._executor.submit(client.execute_trace, dataset.trace)
+            for dataset, client in zip(datasets, cache_system.clients)
         ]
 
         for future in futures:

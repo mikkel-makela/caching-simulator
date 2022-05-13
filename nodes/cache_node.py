@@ -3,48 +3,54 @@ from __future__ import annotations
 import threading
 from typing import List
 
+from nodes.node import Node
 from nodes.request import Request
-from policies.eviction_policy import EvictionPolicy
+from policies.policy import Policy
 from simulation.simulation_statistics import HitMissLogs
+from utilities import get_hit_ratio
 
 
-class CacheNode:
+class CacheNode(Node):
 
     _parent_reach_cost: float
-    policy: EvictionPolicy
-    parent: CacheNode or None = None  # None represents the main data store
-    children: List[CacheNode]
-    absorbed_system_cost: float
+    policy: Policy
+    parent: Node
     hit_miss_logs: HitMissLogs
-    lock: threading.Lock  # Used to make request handling thread safe
+    lock: threading.Lock
 
-    def __init__(self, parent_reach_cost: float, policy: EvictionPolicy, children=None):
+    def __init__(self, parent_reach_cost: float, policy: Policy, children: List[CacheNode] or None = None):
+        super().__init__(children)
         self._parent_reach_cost = parent_reach_cost
         self.policy = policy
-        self.children = [] if children is None else children
         self.lock = threading.Lock()
         self.hit_miss_logs = HitMissLogs()
-        self.absorbed_system_cost = 0
-        for child in self.children:
-            child.parent = self
 
-    def process_request(self, request: Request):
+    """
+    Tries to process the request. Returns whether it was successful.
+    """
+    def process_request_and_get_result(self, request: Request) -> bool:
         self.lock.acquire()
-        if not self.policy.is_present(request.catalog_item) and self.parent is None:
-            # Parent is the main cache, current cost and the final fetch cost need to be observed
-            self.absorbed_system_cost += request.current_cost + self._parent_reach_cost
-        elif self.policy.is_present(request.catalog_item):
-            # Request can be served, so all cost gets absorbed
-            self.absorbed_system_cost += request.current_cost
+        if self.policy.is_present(request.catalog_item):
+            return self.handle_file_present(request)
         else:
-            self.parent.process_request(request.get_with_incremented_cost(self._parent_reach_cost))
+            return self.handle_file_missing(request)
 
-        self.update_logs(request.catalog_item)
-        self.policy.update(request.catalog_item)
+    def handle_file_present(self, request: Request) -> bool:
+        self.hit_miss_logs.hits += 1
+        self.absorbed_system_cost += request.current_cost
+        self.update_policy_and_release_lock(request.catalog_item)
+        return True
+
+    def handle_file_missing(self, request: Request) -> bool:
+        self.hit_miss_logs.misses += 1
+        self.update_policy_and_release_lock(request.catalog_item)
+        if self.parent is None:
+            return False
+        return self.parent.process_request_and_get_result(request.get_with_incremented_cost(self._parent_reach_cost))
+
+    def update_policy_and_release_lock(self, file: int):
+        self.policy.update(file)
         self.lock.release()
 
-    def update_logs(self, item: int):
-        if self.policy.is_present(item):
-            self.hit_miss_logs.hits += 1
-        else:
-            self.hit_miss_logs.misses += 1
+    def get_hit_ratio(self) -> float:
+        return get_hit_ratio(self.hit_miss_logs.hits, self.hit_miss_logs.misses)

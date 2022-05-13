@@ -22,9 +22,10 @@ class HitRatioTree:
 
 @dataclass
 class SimulationStatistics:
-    hit_ratio_array: np.ndarray
     hit_ratio: float
     policy: str
+    regret: np.ndarray
+    hit_ratio_list: np.ndarray
 
 
 @dataclass

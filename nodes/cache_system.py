@@ -1,32 +1,23 @@
+from dataclasses import dataclass
 from typing import List
 
-from nodes.cache_node import CacheNode
+from nodes.client_node import ClientNode
+from nodes.main_node import MainNode
+from nodes.node import Node
 
 
-def get_absorbed_cost(node: CacheNode):
+def get_absorbed_cost(node: Node):
     return node.absorbed_system_cost + sum(map(lambda child: get_absorbed_cost(child), node.children))
 
 
-def get_leaf_nodes(nodes: List[CacheNode]) -> List[CacheNode]:
-    leafs = []
-    for node in nodes:
-        leafs += [node] if len(node.children) == 0 else get_leaf_nodes(node.children)
-    return leafs
-
-
+@dataclass
 class CacheSystem:
     """
-    To use for simulations, keep a list of child nodes and make them serve requests.
+    Datastructure that stores the main server of a system and all its clients.
     """
 
-    first_layer_nodes: List[CacheNode]
-
-    def __init__(self, first_layer_nodes: List[CacheNode]):
-        self.first_layer_nodes = first_layer_nodes
+    main_server: MainNode
+    clients: List[ClientNode]
 
     def get_absorbed_cost(self) -> float:
-        return sum(map(lambda node: get_absorbed_cost(node), self.first_layer_nodes))
-
-    def get_leaf_nodes(self) -> List[CacheNode]:
-        return get_leaf_nodes(self.first_layer_nodes)
-
+        return get_absorbed_cost(self.main_server)

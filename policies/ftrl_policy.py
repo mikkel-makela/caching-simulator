@@ -6,6 +6,9 @@ from policies.policy import Policy
 class FTRLPolicy(Policy):
     """
     (Non-expert) Follow the Regularized Leader policy.
+
+    TODO: file_request_counts array becomes infeasibly large for big catalogs
+    Solution: LFU style
     """
 
     _file_request_counts: np.ndarray

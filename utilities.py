@@ -1,15 +1,39 @@
-from typing import List, Iterable
+from typing import List
+
+from matplotlib import pyplot as plt
 
 from simulation.simulation_statistics import HitRatioTree, SimulationStatistics, HierarchicalSimulationStatistics
 
 
-def print_single_level_statistics(statistics: Iterable[SimulationStatistics]) -> None:
+def get_hit_ratio(hits, misses) -> float:
+    assert hits >= 0
+    assert misses >= 0
+    total = hits + misses
+    return 0 if total == 0 else hits / total
+
+
+def display_single_level_statistics(statistics: List[SimulationStatistics]) -> None:
     for statistic in statistics:
         print(f'=========={statistic.policy}==========')
         print(f'Cumulative hit rate: {round(statistic.hit_ratio * 100, 2)}%')
+        plt.plot(statistic.regret, label=statistic.policy.split(" ")[0])
+
+    plt.ylabel(r"$\frac{R_{T}}{T}$", rotation=0, labelpad=15, fontsize=20)
+    plt.xlabel(r"$T$", fontsize=15)
+    plt.legend(loc="upper right")
+    plt.show()
+
+    plt.figure()
+    for statistic in statistics:
+        plt.plot(statistic.hit_ratio_list, label=statistic.policy.split(" ")[0])
+
+    plt.ylabel(r"Hit ratio")
+    plt.xlabel(r"$T$", fontsize=15)
+    plt.legend(loc="upper right")
+    plt.show()
 
 
-def print_multi_level_statistics(statistics: HierarchicalSimulationStatistics) -> None:
+def display_multi_level_statistics(statistics: HierarchicalSimulationStatistics) -> None:
     print(f'System-wide cost: {statistics.total_cost}\n')
     print("Hit Ratio Per Cache")
     print("===================")
