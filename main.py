@@ -2,14 +2,14 @@ import random
 from typing import List
 
 from data.loaders import load_movielens, load_bipartite_movielens
-from factories.cache_factory import get_bipartite_system_from_dataset
+from factories.cache_factory import get_bipartite_systems_from_datasets
 from policies.ftrl_policy import FTRLPolicy
 from policies.lfu_policy import LFUPolicy
 from policies.lru_policy import LRUPolicy
 from policies.policy import Policy
 from simulation.simulation_parameters import SimulationParameters
 from simulation.simulation_runner import SimulationRunner
-from simulation.simulation_statistics import SimulationStatistics, HierarchicalSimulationStatistics
+from simulation.simulation_statistics import SimulationStatistics
 from utilities import display_multi_level_statistics, display_single_level_statistics
 
 
@@ -40,15 +40,18 @@ def run_single_cache_simulation():
 
 def run_multi_cache_simulation():
     datasets = load_bipartite_movielens(DataPath.MOVIE_LENS)
-    system = get_bipartite_system_from_dataset(datasets, 50, d_regular_degree=8)
-    runner = SimulationRunner(threads=min([len(system.clients), 10]))
-    statistics: HierarchicalSimulationStatistics = runner.run_bipartite_simulations(system, datasets)
+    cache_size = 50
+    d_regular_degree = 2
+    cache_count = 6
+    systems = get_bipartite_systems_from_datasets(datasets, cache_size, d_regular_degree, cache_count)
+    runner = SimulationRunner(threads=min([len(systems), 10]))
+    statistics = runner.run_bipartite_simulations(systems, datasets)
     display_multi_level_statistics(statistics)
 
 
 def main():
-    run_single_cache_simulation()
-    # run_multi_cache_simulation()
+    # run_single_cache_simulation()
+    run_multi_cache_simulation()
 
 
 if __name__ == "__main__":

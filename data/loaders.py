@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-MAX_TRACE_LENGTH: int or None = 10_000
+MAX_TRACE_LENGTH: int or None = 50_000
 MAX_ROWS: int or None = 1_000_000
 
 

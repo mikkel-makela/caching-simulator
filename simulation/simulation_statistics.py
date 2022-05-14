@@ -21,15 +21,20 @@ class HitRatioTree:
 
 
 @dataclass
-class SimulationStatistics:
-    hit_ratio: float
+class Statistics:
     policy: str
+
+
+@dataclass
+class SimulationStatistics(Statistics):
+    hit_ratio: float
     regret: np.ndarray
     hit_ratio_list: np.ndarray
 
 
 @dataclass
-class HierarchicalSimulationStatistics:
+class HierarchicalSimulationStatistics(Statistics):
     hit_ratio_tree: HitRatioTree
     total_cost: float
+    costs: np.ndarray or None
 

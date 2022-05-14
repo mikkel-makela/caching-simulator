@@ -1,9 +1,9 @@
 import threading
 from typing import List
 
-from nodes.cache_node import CacheNode
-from nodes.node import Node
-from nodes.request import Request
+from system.nodes.cache_node import CacheNode
+from system.nodes.node import Node
+from system.request import Request
 
 
 class MainNode(Node):

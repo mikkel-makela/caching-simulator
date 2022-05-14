@@ -10,7 +10,7 @@ PERMUTATION_CONSTANT: float = 5.0
 
 class ExpertFTPLPolicy(ExpertFTLPolicy):
     """
-    Follows the leader, but adds a random initial loss to all experts.
+    Follows the leader, but adds random noise when selecting the smallest loss expert.
     """
 
     def __init__(self, capacity: int, policies: [EvictionPolicy]):
@@ -24,4 +24,10 @@ class ExpertFTPLPolicy(ExpertFTLPolicy):
     Gets the expert with the minimum loss, but with some added noise.
     """
     def get_min_loss_expert(self) -> ExpertAdaptedPolicy:
-        return min(self.experts, key=lambda e: e.loss + np.random.rand() * PERMUTATION_CONSTANT)
+        expert_losses = np.array(list(map(lambda e: e.loss, self.experts)))
+        perturbed_losses = expert_losses + np.random.normal(
+            loc=0,
+            scale=PERMUTATION_CONSTANT,
+            size=expert_losses.size
+        )
+        return self.experts[np.argmin(perturbed_losses)]

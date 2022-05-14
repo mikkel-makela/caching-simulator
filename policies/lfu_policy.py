@@ -14,7 +14,7 @@ class LFUPolicy(EvictionPolicy):
 
     @staticmethod
     def get_name() -> str:
-        return "LFU Policy"
+        return "LFU"
 
     """
     Learns from the request. Updates the frequency map.

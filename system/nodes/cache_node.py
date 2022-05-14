@@ -3,8 +3,8 @@ from __future__ import annotations
 import threading
 from typing import List
 
-from nodes.node import Node
-from nodes.request import Request
+from system.nodes.node import Node
+from system.request import Request
 from policies.policy import Policy
 from simulation.simulation_statistics import HitMissLogs
 from utilities import get_hit_ratio

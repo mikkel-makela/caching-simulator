@@ -8,7 +8,7 @@ class FTRLPolicy(Policy):
     (Non-expert) Follow the Regularized Leader policy.
 
     TODO: file_request_counts array becomes infeasibly large for big catalogs
-    Solution: LFU style
+    Solution: LFU style approach where we store a subset of requests
     """
 
     _file_request_counts: np.ndarray
@@ -25,7 +25,7 @@ class FTRLPolicy(Policy):
 
     @staticmethod
     def get_name() -> str:
-        return "FTRL Policy"
+        return "FTRL"
 
     """
     Updates the request counts and loads a new cache based on it.

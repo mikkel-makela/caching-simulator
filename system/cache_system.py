@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import List
 
-from nodes.client_node import ClientNode
-from nodes.main_node import MainNode
-from nodes.node import Node
+from system.client import Client
+from system.nodes.main_node import MainNode
+from system.nodes.node import Node
 
 
 def get_absorbed_cost(node: Node):
@@ -17,7 +17,8 @@ class CacheSystem:
     """
 
     main_server: MainNode
-    clients: List[ClientNode]
+    clients: List[Client]
+    policy: str
 
     def get_absorbed_cost(self) -> float:
         return get_absorbed_cost(self.main_server)

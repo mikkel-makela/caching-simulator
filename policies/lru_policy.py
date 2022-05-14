@@ -14,7 +14,7 @@ class LRUPolicy(EvictionPolicy):
 
     @staticmethod
     def get_name() -> str:
-        return "LRU Policy"
+        return "LRU"
 
     """
     Learns from the request. Updates the usage map.
