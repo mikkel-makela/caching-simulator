@@ -7,7 +7,7 @@ import pandas as pd
 
 
 # TODO: consider moving MAX_LEN to notebook somehow and take it as an argument
-MAX_TRACE_LENGTH: int or None = 10_000
+MAX_TRACE_LENGTH: int or None = 50_000
 MAX_ROWS: int or None = 1_000_000
 
 
