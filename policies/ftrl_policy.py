@@ -47,3 +47,10 @@ class FTRLPolicy(Policy):
             size=self._file_request_counts.size
         )
         return np.argsort(-perturbed_counts)[:self._capacity]
+
+    """
+    Resets the cache, deleting all entries.
+    """
+    def reset(self) -> None:
+        super().reset()
+        self._file_request_counts = np.zeros(self._file_request_counts.size)

@@ -31,11 +31,13 @@ class LFUPolicy(EvictionPolicy):
         self._frequency_map[file] = 0
 
     """
-    Removes the item from the cache that has been least frequently used.
+    Evicts an item from the cache.
     """
-    def remove_file_from_cache(self, file: int) -> int:
-        self._frequency_map.pop(file)
-        return super().remove_file_from_cache(file)
+    def evict_item(self) -> int:
+        victim = super().evict_item()
+        self._frequency_map.pop(victim)
+        return victim
+
 
     """
     Resets the cache, deleting all entries.

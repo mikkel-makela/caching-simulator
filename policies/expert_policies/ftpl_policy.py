@@ -1,33 +1,40 @@
+from typing import List
+
 import numpy as np
 
-from policies.expert_policies.expert_adapter.expert_adapter import ExpertAdaptedPolicy
-from policies.expert_policies.ftl_policy import ExpertFTLPolicy
-from policies.eviction_policy import EvictionPolicy
+from policies.expert_policies.expert import Expert
+from policies.policy import Policy
 
 
-PERMUTATION_CONSTANT: float = 5.0
+PERMUTATION_FACTOR: float = 1.0
 
 
-class ExpertFTPLPolicy(ExpertFTLPolicy):
-    """
-    Follows the leader, but adds random noise when selecting the smallest loss expert.
-    """
+class ExpertFTPLPolicy(Policy):
 
-    def __init__(self, capacity: int, policies: [EvictionPolicy]):
-        super().__init__(capacity, policies)
+    _experts: List[Expert]
+
+    def __init__(self, capacity: int, policies: List[Policy]):
+        super().__init__(capacity)
+        self._experts = list(map(lambda p: Expert(p), policies))
 
     @staticmethod
     def get_name() -> str:
-        return "Expert FTPL Policy"
+        return "Expert FTPL"
 
     """
-    Gets the expert with the minimum loss, but with some added noise.
+    Updates caches of all experts and selects the one with the smallest loss.
     """
-    def get_min_loss_expert(self) -> ExpertAdaptedPolicy:
-        expert_losses = np.array(list(map(lambda e: e.loss, self.experts)))
-        perturbed_losses = expert_losses + np.random.normal(
+    def update(self, request: int) -> None:
+        super().update(request)
+        for expert in self._experts:
+            expert.update_expert(request)
+
+        self.cache = self.get_lowest_loss_expert().policy.cache
+
+    def get_lowest_loss_expert(self) -> Expert:
+        losses = np.array(list(map(lambda e: e.loss, self._experts))) + np.random.normal(
             loc=0,
-            scale=PERMUTATION_CONSTANT,
-            size=expert_losses.size
+            scale=PERMUTATION_FACTOR,
+            size=len(self._experts)
         )
-        return self.experts[np.argmin(perturbed_losses)]
+        return self._experts[np.argmin(losses)]

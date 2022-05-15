@@ -1,3 +1,4 @@
+import pickle
 from dataclasses import dataclass
 from typing import List
 
@@ -5,7 +6,8 @@ import numpy as np
 import pandas as pd
 
 
-MAX_TRACE_LENGTH: int or None = 50_000
+# TODO: consider moving MAX_LEN to notebook somehow and take it as an argument
+MAX_TRACE_LENGTH: int or None = 10_000
 MAX_ROWS: int or None = 1_000_000
 
 
@@ -66,3 +68,12 @@ def load_bipartite_movielens(file_path: str) -> np.ndarray:
     )
 
     return np.array(datasets)
+
+
+def load_online_cache_trace(file_name: str) -> Dataset:
+    with open(file_name, 'rb') as f:
+        trace = pickle.load(f)
+        return Dataset(
+            catalog_size=np.max(trace),
+            trace=trace
+        )

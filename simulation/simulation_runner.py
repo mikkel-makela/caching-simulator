@@ -49,7 +49,8 @@ def _run_single_cache_simulation(
 
 def _get_hierarchical_statistics(
         cache_system: CacheSystem,
-        costs: np.ndarray or None = None
+        costs: np.ndarray or None = None,
+        hit_ratios: np.ndarray or None = None
 ) -> HierarchicalSimulationStatistics:
     def get_trees(nodes: List[Node], level=1) -> List[HitRatioTree]:
         return list(
@@ -67,14 +68,16 @@ def _get_hierarchical_statistics(
         cache_system.policy,
         HitRatioTree(get_trees(cache_system.main_server.children), 1.0, "Main Storage, Level 0"),
         cache_system.get_absorbed_cost(),
-        costs
+        costs,
+        hit_ratios
     )
 
 
+# TODO: ugly tuple return, introduce something oop, simplify function
 def _execute_system_synchronously(
         system: CacheSystem,
         datasets: np.ndarray
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
 
     @dataclass
     class ClientTrace:
@@ -94,17 +97,19 @@ def _execute_system_synchronously(
     )
 
     costs = np.zeros(sum(map(lambda ds: ds.trace.size, datasets)))
-    current_cost = 0
+    hit_ratio = np.zeros(costs.size)
+    t = 0
     while len(client_traces) > 0:
         for client_trace in client_traces:
             if client_trace.is_ready():
                 client_traces.remove(client_trace)
                 break
             client_trace.execute_next()
-            costs[current_cost] = system.get_absorbed_cost()
-            current_cost += 1
+            costs[t] = system.get_absorbed_cost()
+            hit_ratio[t] = system.get_cumulative_hit_ratio()
+            t += 1
 
-    return costs
+    return costs, hit_ratio
 
 
 class SimulationRunner:
@@ -157,13 +162,13 @@ class SimulationRunner:
             cache_system: CacheSystem,
             datasets: np.ndarray
     ) -> HierarchicalSimulationStatistics:
-        costs = None
+        costs = hit_ratios = None
         if self._use_concurrency:
             self._execute_system_concurrently(cache_system.clients, datasets)
         else:
-            costs = _execute_system_synchronously(cache_system, datasets)
+            costs, hit_ratios = _execute_system_synchronously(cache_system, datasets)
 
-        return _get_hierarchical_statistics(cache_system, costs)
+        return _get_hierarchical_statistics(cache_system, costs, hit_ratios)
 
     def _execute_system_concurrently(
             self,

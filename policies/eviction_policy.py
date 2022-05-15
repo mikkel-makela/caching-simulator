@@ -30,14 +30,8 @@ class EvictionPolicy(Policy):
     """
     def evict_item(self) -> int:
         victim = self.get_victim()
-        return self.remove_file_from_cache(victim)
-
-    """
-    Removes the item from the cache array.
-    """
-    def remove_file_from_cache(self, file: int) -> int:
-        self.cache[np.where(self.cache == file)] = None
-        return file
+        self.cache[np.where(self.cache == victim)] = None
+        return victim
 
     """
     Adds an item to a cache, assumes that the cache is not full.

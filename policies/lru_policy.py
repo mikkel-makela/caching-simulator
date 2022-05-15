@@ -26,9 +26,10 @@ class LRUPolicy(EvictionPolicy):
     """
     Removes the item from the cache that has been least recently used.
     """
-    def remove_file_from_cache(self, file: int) -> int:
-        self._usage_map.pop(file)
-        return super().remove_file_from_cache(file)
+    def evict_item(self) -> int:
+        victim = super().evict_item()
+        self._usage_map.pop(victim)
+        return victim
 
     """
     Get the least recently used element.

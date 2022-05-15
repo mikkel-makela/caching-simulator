@@ -29,7 +29,7 @@ class Statistics:
 class SimulationStatistics(Statistics):
     hit_ratio: float
     regret: np.ndarray
-    hit_ratio_list: np.ndarray
+    hit_ratios: np.ndarray
 
 
 @dataclass
@@ -37,4 +37,5 @@ class HierarchicalSimulationStatistics(Statistics):
     hit_ratio_tree: HitRatioTree
     total_cost: float
     costs: np.ndarray or None
+    hit_ratios: np.ndarray or None
 

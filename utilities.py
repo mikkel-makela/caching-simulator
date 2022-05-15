@@ -12,10 +12,11 @@ def get_hit_ratio(hits, misses) -> float:
     return 0 if total == 0 else hits / total
 
 
-def display_single_level_statistics(statistics: List[SimulationStatistics]) -> None:
+def display_single_level_statistics(statistics: List[SimulationStatistics], print_results: bool = False) -> None:
     for statistic in statistics:
-        print(f'=========={statistic.policy}==========')
-        print(f'Cumulative hit rate: {round(statistic.hit_ratio * 100, 2)}%')
+        if print_results:
+            print(f'=========={statistic.policy}==========')
+            print(f'Cumulative hit rate: {round(statistic.hit_ratio * 100, 2)}%')
         plt.plot(statistic.regret, label=statistic.policy)
 
     plt.ylabel(r"$\frac{R_{T}}{T}$", rotation=0, labelpad=15, fontsize=20)
@@ -25,7 +26,7 @@ def display_single_level_statistics(statistics: List[SimulationStatistics]) -> N
 
     plt.figure()
     for statistic in statistics:
-        plt.plot(statistic.hit_ratio_list, label=statistic.policy.split(" ")[0])
+        plt.plot(statistic.hit_ratios, label=statistic.policy)
 
     plt.ylabel(r"Hit ratio")
     plt.xlabel(r"$T$", fontsize=15)
@@ -33,15 +34,28 @@ def display_single_level_statistics(statistics: List[SimulationStatistics]) -> N
     plt.show()
 
 
-def display_multi_level_statistics(statistics: List[HierarchicalSimulationStatistics]) -> None:
+def display_multi_level_statistics(
+        statistics: List[HierarchicalSimulationStatistics],
+        print_results: bool = False
+) -> None:
     for statistic in statistics:
-        display_multi_level_statistic(statistic)
+        if print_results:
+            display_multi_level_statistic(statistic)
         if statistic.costs is not None:
             plt.plot(statistic.costs, label=statistic.policy)
 
     plt.ylabel(r"Cost")
     plt.xlabel(r"$T$", fontsize=15)
     plt.legend(loc="upper left")
+    plt.show()
+
+    for statistic in statistics:
+        if statistic.hit_ratios is not None:
+            plt.plot(statistic.hit_ratios, label=statistic.policy)
+
+    plt.ylabel(r"Hit ratio")
+    plt.xlabel(r"$T$", fontsize=15)
+    plt.legend(loc="upper right")
     plt.show()
 
 
