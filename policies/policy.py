@@ -14,7 +14,7 @@ class Policy:
     time: int
 
     def __init__(self, capacity: int):
-        self.time = 1
+        self.time = 0
         self.cache = np.empty(capacity, dtype=object)
         self.regret = None
 

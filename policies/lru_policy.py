@@ -35,7 +35,7 @@ class LRUPolicy(EvictionPolicy):
     Get the least recently used element.
     """
     def get_victim(self) -> int:
-        return max(self._usage_map.items(), key=lambda item: self.time - item[1])[0]
+        return min(self._usage_map.items(), key=lambda item: item[1])[0]
 
     """
     Resets the cache, deleting all entries.

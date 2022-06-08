@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List
 
 import numpy as np
 
@@ -8,16 +7,6 @@ import numpy as np
 class HitMissLogs:
     hits: int = 0
     misses: int = 0
-
-
-@dataclass
-class HitRatioTree:
-    children: List[HitRatioTree]
-    hit_ratio: float
-    policy: str
-
-    def __str__(self):
-        return f'{self.policy}: {round(self.hit_ratio, 2)}'
 
 
 @dataclass
@@ -34,8 +23,8 @@ class SimulationStatistics(Statistics):
 
 @dataclass
 class HierarchicalSimulationStatistics(Statistics):
-    hit_ratio_tree: HitRatioTree
     total_cost: float
     costs: np.ndarray or None
-    hit_ratios: np.ndarray or None
+    hit_ratios_for_caches: np.ndarray
+    hit_ratios_t: np.ndarray or None
 

@@ -38,7 +38,6 @@ class LFUPolicy(EvictionPolicy):
         self._frequency_map.pop(victim)
         return victim
 
-
     """
     Resets the cache, deleting all entries.
     """

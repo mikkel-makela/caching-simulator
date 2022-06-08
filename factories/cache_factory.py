@@ -1,28 +1,54 @@
 import random
-from typing import List
+from typing import List, Callable
 
 import numpy as np
 
 from policies.expert_policies.ftpl_policy import ExpertFTPLPolicy
+from policies.expert_policies.iawm_policy import IAWMPolicy
 from system.nodes.cache_node import CacheNode
 from system.cache_system import CacheSystem
 from system.client import Client
 from system.nodes.main_node import MainNode
-from policies.ftrl_policy import FTRLPolicy
+from policies.ftpl_policy import FTPLPolicy
 from policies.lfu_policy import LFUPolicy
 from policies.lru_policy import LRUPolicy
 from policies.policy import Policy
+from system.nodes.node import Node
 
 
-def get_expert_ftpl_policy(cache_size: int, catalog_size: int, time_horizon: int) -> ExpertFTPLPolicy:
+def get_expert_ftpl_policy(
+        cache_size: int,
+        catalog_size: int,
+        time_horizon: int,
+        discount_rates: List[float]
+) -> ExpertFTPLPolicy:
     return ExpertFTPLPolicy(
         cache_size,
-        [
-            LRUPolicy(cache_size),
-            LFUPolicy(cache_size),
-            FTRLPolicy(cache_size, catalog_size, time_horizon)
-        ]
+        get_ftpl_policies(cache_size, catalog_size, time_horizon, discount_rates)
     )
+
+
+def get_expert_iawm_policy(
+        cache_size: int,
+        catalog_size: int,
+        time_horizon: int,
+        discount_rates: List[float]
+) -> IAWMPolicy:
+    return IAWMPolicy(
+        cache_size,
+        get_ftpl_policies(cache_size, catalog_size, time_horizon, discount_rates)
+    )
+
+
+def get_ftpl_policies(
+        cache_size: int,
+        catalog_size: int,
+        time_horizon: int,
+        discount_rates: List[float]
+) -> List[Policy]:
+    if 1.0 not in discount_rates:
+        discount_rates.append(1.0)
+    return list(map(lambda d: FTPLPolicy(cache_size, catalog_size, time_horizon, discount_rate=d), discount_rates))
 
 
 def get_bipartite_systems_from_datasets(
@@ -42,17 +68,52 @@ def get_bipartite_systems_from_datasets(
     """
     return _get_bipartite_systems(
         [
-            _get_bipartite_lfu_policies(cache_size, cache_count),
-            _get_bipartite_lru_policies(cache_size, cache_count),
-            _get_bipartite_ftrl_policies(datasets, cache_size, cache_count),
-            _get_bipartite_expert_ftpl_policies(datasets, cache_size, cache_count)
+            _get_lfu_policies(cache_size, cache_count),
+            _get_lru_policies(cache_size, cache_count),
+            _get_ftpl_policies(datasets, cache_size, cache_count),
+            _get_iawm_policies(datasets, cache_size, cache_count)
         ],
         d_regular_degree,
         datasets.size
     )
 
 
-def _get_bipartite_lfu_policies(
+def get_hierarchical_system_from_datasets(
+        datasets: np.ndarray,
+        cache_size: int,
+        cache_size_factor: int,
+        d_regular_degree: int,
+        layers: int,
+        policy_generator: Callable[[int, int], List[Policy]]
+) -> CacheSystem:
+    """
+    Returns a hierarchical caching system. Clients are not connected to the main node, and must acquire all files
+    by interfacing with visible caches.
+
+    :param datasets: Datasets of connected users
+    :param cache_size: Size of edge caches
+    :param cache_size_factor: Factor by which cache size increases as we go up in the hierarchy
+    :param d_regular_degree: How many edge caches each user is connected to
+    :param layers: The amount of layers in the hierarchy
+    :param policy_generator: A generator function that takes in the cache size and the amount of policies to generate.
+    :return: Caching system
+    """
+    def get_edge_nodes() -> int:
+        total_nodes = 1
+        for i in range(1, layers):
+            total_nodes += cache_size_factor ** i
+        return total_nodes
+
+    assert layers >= 1
+    edge_nodes = get_edge_nodes()
+    assert datasets.size >= 2 * edge_nodes
+
+    main_node = MainNode()
+
+    return CacheSystem([], "Insert policy name")
+
+
+def _get_lfu_policies(
         cache_size: int,
         cache_count: int
 ) -> List[LFUPolicy]:
@@ -63,7 +124,7 @@ def _get_bipartite_lfu_policies(
     ]
 
 
-def _get_bipartite_lru_policies(cache_size: int, cache_count: int) -> List[LRUPolicy]:
+def _get_lru_policies(cache_size: int, cache_count: int) -> List[LRUPolicy]:
     assert cache_size > 0
     return [
             LRUPolicy(cache_size)
@@ -71,36 +132,36 @@ def _get_bipartite_lru_policies(cache_size: int, cache_count: int) -> List[LRUPo
     ]
 
 
-def _get_bipartite_ftrl_policies(
+def _get_ftpl_policies(
         datasets: np.ndarray,
         cache_size: int,
         cache_count: int
-) -> List[FTRLPolicy]:
+) -> List[FTPLPolicy]:
+    catalog_size, estimated_trace_size = _get_catalog_and_trace_size(datasets, cache_size)
+    return [
+            FTPLPolicy(cache_size, catalog_size, estimated_trace_size)
+            for _ in range(cache_count)
+    ]
+
+
+def _get_iawm_policies(
+        datasets: np.ndarray,
+        cache_size: int,
+        cache_count: int
+) -> List[IAWMPolicy]:
+    catalog_size, estimated_trace_size = _get_catalog_and_trace_size(datasets, cache_size)
+    return [
+            get_expert_iawm_policy(cache_size, catalog_size, estimated_trace_size, [0.99, 0.999, 0.9999, 1.0])
+            for _ in range(cache_count)
+    ]
+
+
+def _get_catalog_and_trace_size(datasets: np.ndarray, cache_size: int) -> tuple[int, int]:
     assert datasets.size > 0
     assert cache_size > 0
     catalog_size = max(datasets, key=lambda ds: ds.catalog_size).catalog_size
     estimated_trace_size = int(np.average(np.array(list(map(lambda ds: ds.trace.size, datasets)))))
-    return [
-            FTRLPolicy(cache_size, catalog_size, estimated_trace_size)
-            for _ in range(cache_count)
-    ]
-
-
-def _get_bipartite_expert_ftpl_policies(
-        datasets: np.ndarray,
-        cache_size: int,
-        cache_count: int
-) -> List[ExpertFTPLPolicy]:
-    assert datasets.size > 0
-    assert cache_size > 0
-    return [
-            get_expert_ftpl_policy(
-                cache_size,
-                _get_bipartite_catalog_size(datasets),
-                _get_estimated_bipartite_time_horizon(datasets)
-            )
-            for _ in range(cache_count)
-    ]
+    return catalog_size, estimated_trace_size
 
 
 def _get_estimated_bipartite_time_horizon(datasets: np.ndarray) -> int:
@@ -119,19 +180,17 @@ def _get_bipartite_systems(leaf_policies: List[List[Policy]], d_regular_degree: 
     :param clients: The amount of clients.
     :return: The list of caching systems.
     """
-    leaf_parent_costs: List[float] = [random.random() * 0.01 for _ in range(len(leaf_policies[0]))]
-    client_leaf_connections: List[List[int]] = [
+    leaf_parent_costs: List[float] = [random.random() * 0.1 for _ in range(len(leaf_policies[0]))]
+    client_cache_connections: List[List[int]] = [
         random.sample(list(np.arange(0, len(leaf_policies[0]))), d_regular_degree)
         for _ in range(clients)
     ]
-    client_leaf_costs: List[float] = [random.random() * 0.0001 for _ in range(clients)]
     return list(
         map(
             lambda policies: _get_bipartite_system(
                 policies,
                 leaf_parent_costs,
-                client_leaf_costs,
-                client_leaf_connections
+                client_cache_connections
             ),
             leaf_policies
         )
@@ -141,20 +200,25 @@ def _get_bipartite_systems(leaf_policies: List[List[Policy]], d_regular_degree: 
 def _get_bipartite_system(
         policies: List[Policy],
         leaf_parent_costs: List[float],
-        client_leaf_costs: List[float],
-        client_leaf_connections: List[List[int]]
+        client_cache_connections: List[List[int]]
 ) -> CacheSystem:
-    leafs: List[CacheNode] = list(
+    leafs: List[Node] = list(
         map(
-            lambda cost_policy_pair: CacheNode(cost_policy_pair[0], cost_policy_pair[1], []),
-            list(zip(leaf_parent_costs, policies))
+            lambda policy: CacheNode(policy),
+            policies
         )
     )
-    users: List[Client] = list(
+    main_node: Node = MainNode()
+    dummy_nodes: List[CacheNode] = list(
         map(
-            lambda connections: Client(list(zip(client_leaf_costs, list(map(lambda i: leafs[i], connections))))),
-            client_leaf_connections
+            lambda connections: CacheNode(
+                LRUPolicy(0),
+                list(zip(leaf_parent_costs, list(map(lambda i: leafs[i], connections))))
+                + [(10000.0, main_node)]
+            ),
+            client_cache_connections
         )
     )
-    return CacheSystem(MainNode(leafs), users, policies[0].get_name())
+    clients: List[Client] = list(map(lambda node: Client(node, 0), dummy_nodes))
+    return CacheSystem(clients, policies[0].get_name(), leafs)
 

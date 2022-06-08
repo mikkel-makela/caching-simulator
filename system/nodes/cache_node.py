@@ -4,23 +4,23 @@ import threading
 from typing import List
 
 from system.nodes.node import Node
-from system.request import Request
+from system.requests import Request, Response
 from policies.policy import Policy
 from simulation.simulation_statistics import HitMissLogs
 from utilities import get_hit_ratio
 
 
 class CacheNode(Node):
+    """
+    A regular cache node in the caching system. Connected to some nodes that it can proxy requests to.
+    """
 
-    _parent_reach_cost: float
     policy: Policy
-    parent: Node
     hit_miss_logs: HitMissLogs
     lock: threading.Lock
 
-    def __init__(self, parent_reach_cost: float, policy: Policy, children: List[CacheNode] or None = None):
-        super().__init__(children)
-        self._parent_reach_cost = parent_reach_cost
+    def __init__(self, policy: Policy, visible_nodes: List[tuple[float, Node]] = None):
+        super().__init__(visible_nodes)
         self.policy = policy
         self.lock = threading.Lock()
         self.hit_miss_logs = HitMissLogs()
@@ -28,29 +28,39 @@ class CacheNode(Node):
     """
     Tries to process the request. Returns whether it was successful.
     """
-    def process_request_and_get_result(self, request: Request) -> bool:
-        self.lock.acquire()
-        if self.policy.is_present(request.catalog_item):
-            return self.handle_file_present(request)
-        else:
-            return self.handle_file_missing(request)
+    def process_request_and_get_result(self, request: Request) -> Response:
+        if self.check_and_update_cache(request.catalog_item):
+            self.hit_miss_logs.hits += 1
+            return request.build_response(True)
 
-    def handle_file_present(self, request: Request) -> bool:
-        self.hit_miss_logs.hits += 1
-        self.absorbed_system_cost += request.current_cost
-        self.update_policy_and_release_lock(request.catalog_item)
-        return True
-
-    def handle_file_missing(self, request: Request) -> bool:
         self.hit_miss_logs.misses += 1
-        self.update_policy_and_release_lock(request.catalog_item)
-        if self.parent is None:
-            return False
-        return self.parent.process_request_and_get_result(request.get_with_incremented_cost(self._parent_reach_cost))
+        return self.proxy(request) if self.should_proxy() else request.build_response(False)
 
-    def update_policy_and_release_lock(self, file: int):
+    def should_proxy(self) -> bool:
+        return len(self.visible_nodes) > 0
+
+    def proxy(self, request: Request) -> Response:
+        """
+        Routes the request to some visible cache.
+
+        :param request: The request to be routed
+        :return: Whether the file was found
+        """
+        for cost, node in self.visible_nodes:
+            response = node.process_request_and_get_result(request.get_with_incremented_cost(cost))
+            if response.was_hit:
+                return response
+            else:
+                request.cost = response.cost
+
+        return request.build_response(False)
+
+    def check_and_update_cache(self, file: int) -> bool:
+        self.lock.acquire()
+        was_present = self.policy.is_present(file)
         self.policy.update(file)
         self.lock.release()
+        return was_present
 
     def get_hit_ratio(self) -> float:
         return get_hit_ratio(self.hit_miss_logs.hits, self.hit_miss_logs.misses)

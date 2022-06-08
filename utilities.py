@@ -1,8 +1,11 @@
+import pickle
 from typing import List
 
+import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 
-from simulation.simulation_statistics import HitRatioTree, SimulationStatistics, HierarchicalSimulationStatistics
+from simulation.simulation_statistics import SimulationStatistics, HierarchicalSimulationStatistics
 
 
 def get_hit_ratio(hits, misses) -> float:
@@ -12,35 +15,33 @@ def get_hit_ratio(hits, misses) -> float:
     return 0 if total == 0 else hits / total
 
 
-def display_single_level_statistics(statistics: List[SimulationStatistics], print_results: bool = False) -> None:
+def display_single_level_statistics(statistics: List[SimulationStatistics], print_results: bool = True) -> None:
     for statistic in statistics:
         if print_results:
-            print(f'=========={statistic.policy}==========')
-            print(f'Cumulative hit rate: {round(statistic.hit_ratio * 100, 2)}%')
+            print(f'{statistic.policy} hit rate: {round(statistic.hit_ratio * 100, 2)}%')
         plt.plot(statistic.regret, label=statistic.policy)
 
     plt.ylabel(r"$\frac{R_{T}}{T}$", rotation=0, labelpad=15, fontsize=20)
     plt.xlabel(r"$T$", fontsize=15)
     plt.legend(loc="upper right")
+    plt.ylim([0, 0.4])
     plt.show()
 
     plt.figure()
+    best_hit_ratio = 0
     for statistic in statistics:
         plt.plot(statistic.hit_ratios, label=statistic.policy)
+        best_hit_ratio = max([best_hit_ratio, statistic.hit_ratio])
 
     plt.ylabel(r"Hit ratio")
     plt.xlabel(r"$T$", fontsize=15)
-    plt.legend(loc="upper right")
+    plt.legend(loc="upper left")
+    plt.ylim([0, min([best_hit_ratio + 0.2, 1])])
     plt.show()
 
 
-def display_multi_level_statistics(
-        statistics: List[HierarchicalSimulationStatistics],
-        print_results: bool = False
-) -> None:
+def display_multi_level_statistics(statistics: List[HierarchicalSimulationStatistics]) -> None:
     for statistic in statistics:
-        if print_results:
-            display_multi_level_statistic(statistic)
         if statistic.costs is not None:
             plt.plot(statistic.costs, label=statistic.policy)
 
@@ -50,28 +51,11 @@ def display_multi_level_statistics(
     plt.show()
 
     for statistic in statistics:
-        if statistic.hit_ratios is not None:
-            plt.plot(statistic.hit_ratios, label=statistic.policy)
+        if statistic.hit_ratios_t is not None:
+            plt.plot(statistic.hit_ratios_t, label=statistic.policy)
 
     plt.ylabel(r"Hit ratio")
     plt.xlabel(r"$T$", fontsize=15)
-    plt.legend(loc="upper right")
+    plt.legend(loc="lower left")
     plt.show()
 
-
-def display_multi_level_statistic(statistic: HierarchicalSimulationStatistics) -> None:
-    print(f'=================== {statistic.policy} ===================')
-    print(f'System-wide cost: {statistic.total_cost}')
-    print("Hit Ratio Per Cache")
-    print("===================")
-    current_level = 0
-    queue: List[tuple[HitRatioTree, int]] = [(statistic.hit_ratio_tree, current_level)]
-    while len(queue) > 0:
-        current, level = queue.pop()
-        queue += list(map(lambda c: (c, current_level + 1), current.children))
-        if level != current:
-            end = "\n"
-            current_level = level
-        else:
-            end = ""
-        print(current, end=end)

@@ -3,19 +3,17 @@ from typing import List
 import numpy as np
 
 from policies.expert_policies.expert import Expert
+from policies.expert_policies.expert_policy import ExpertPolicy
 from policies.policy import Policy
 
 
 PERMUTATION_FACTOR: float = 1.0
 
 
-class ExpertFTPLPolicy(Policy):
-
-    _experts: List[Expert]
+class ExpertFTPLPolicy(ExpertPolicy):
 
     def __init__(self, capacity: int, policies: List[Policy]):
-        super().__init__(capacity)
-        self._experts = list(map(lambda p: Expert(p), policies))
+        super().__init__(capacity, policies)
 
     @staticmethod
     def get_name() -> str:
@@ -26,15 +24,12 @@ class ExpertFTPLPolicy(Policy):
     """
     def update(self, request: int) -> None:
         super().update(request)
-        for expert in self._experts:
-            expert.update_expert(request)
-
         self.cache = self.get_lowest_loss_expert().policy.cache
 
     def get_lowest_loss_expert(self) -> Expert:
-        losses = np.array(list(map(lambda e: e.loss, self._experts))) + np.random.normal(
+        losses = np.array(list(map(lambda e: e.loss, self.experts))) + np.random.normal(
             loc=0,
             scale=PERMUTATION_FACTOR,
-            size=len(self._experts)
+            size=len(self.experts)
         )
-        return self._experts[np.argmin(losses)]
+        return self.experts[np.argmin(losses)]

@@ -6,16 +6,27 @@ import numpy as np
 
 from system.cache_system import CacheSystem
 from system.client import Client
-from system.nodes.node import Node
 from policies.policy import Policy
 from simulation.simulation_parameters import SimulationParameters
-from simulation.simulation_statistics import SimulationStatistics, HierarchicalSimulationStatistics, HitRatioTree
+from simulation.simulation_statistics import SimulationStatistics, HierarchicalSimulationStatistics
 from utilities import get_hit_ratio
 
 
 def _get_optimal_static_configuration_hits(trace: np.ndarray, cache_size: int, time: int) -> int:
     _, counts = np.unique(trace[:time], return_counts=True)
     return int(np.sum(-np.sort(-counts)[:cache_size]))
+
+
+def _get_optimal_static_statistics(trace: np.ndarray, time_horizon: int, cache_size: int) -> SimulationStatistics:
+    hit_ratio = np.zeros(time_horizon)
+    for time, request in enumerate(trace[0:time_horizon], start=1):
+        hit_ratio[time - 1] = _get_optimal_static_configuration_hits(trace, cache_size, time) / time
+    return SimulationStatistics(
+        "OPT",
+        hit_ratio[time_horizon - 1],
+        np.zeros(time_horizon),
+        hit_ratio
+    )
 
 
 def _run_single_cache_simulation(
@@ -52,28 +63,23 @@ def _get_hierarchical_statistics(
         costs: np.ndarray or None = None,
         hit_ratios: np.ndarray or None = None
 ) -> HierarchicalSimulationStatistics:
-    def get_trees(nodes: List[Node], level=1) -> List[HitRatioTree]:
-        return list(
+    hit_ratios_for_caches = np.array(
+        list(
             map(
-                lambda n: HitRatioTree(
-                    get_trees(n.children, level + 1),
-                    get_hit_ratio(n.hit_miss_logs.hits, n.hit_miss_logs.misses),
-                    f'{n.policy.get_name()}, Level {level}'
-                ),
-                nodes
+                lambda cache: get_hit_ratio(cache.hit_miss_logs.hits, cache.hit_miss_logs.misses),
+                cache_system.caches
             )
         )
-
+    )
     return HierarchicalSimulationStatistics(
         cache_system.policy,
-        HitRatioTree(get_trees(cache_system.main_server.children), 1.0, "Main Storage, Level 0"),
         cache_system.get_absorbed_cost(),
         costs,
+        hit_ratios_for_caches,
         hit_ratios
     )
 
 
-# TODO: ugly tuple return, introduce something oop, simplify function
 def _execute_system_synchronously(
         system: CacheSystem,
         datasets: np.ndarray
@@ -140,7 +146,9 @@ class SimulationRunner:
             for policy in parameters.policies
         ]
 
-        return list(map(lambda f: f.result(), futures))
+        return list(map(lambda f: f.result(), futures)) + [
+            _get_optimal_static_statistics(parameters.trace, parameters.time, parameters.policies[0].cache.size)
+        ]
 
     def run_bipartite_simulations(
             self,

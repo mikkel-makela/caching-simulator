@@ -2,6 +2,7 @@ from policies.policy import Policy
 
 
 class Expert:
+
     policy: Policy
     loss: float
 
