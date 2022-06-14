@@ -16,7 +16,6 @@ class Policy:
     def __init__(self, capacity: int):
         self.time = 0
         self.cache = np.empty(capacity, dtype=object)
-        self.regret = None
 
     @staticmethod
     def get_name() -> str:

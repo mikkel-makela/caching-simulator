@@ -1,11 +1,8 @@
-import pickle
 from typing import List
 
-import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 
-from simulation.simulation_statistics import SimulationStatistics, HierarchicalSimulationStatistics
+from simulation.simulation_statistics import SimulationStatistics, BiPartiteSimulationStatistics
 
 
 def get_hit_ratio(hits, misses) -> float:
@@ -40,22 +37,12 @@ def display_single_level_statistics(statistics: List[SimulationStatistics], prin
     plt.show()
 
 
-def display_multi_level_statistics(statistics: List[HierarchicalSimulationStatistics]) -> None:
+def display_multi_level_statistics(statistics: List[BiPartiteSimulationStatistics]) -> None:
     for statistic in statistics:
-        if statistic.costs is not None:
-            plt.plot(statistic.costs, label=statistic.policy)
+        plt.plot(statistic.rewards, label=statistic.policy)
 
-    plt.ylabel(r"Cost")
+    plt.ylabel(r"Reward")
     plt.xlabel(r"$T$", fontsize=15)
     plt.legend(loc="upper left")
-    plt.show()
-
-    for statistic in statistics:
-        if statistic.hit_ratios_t is not None:
-            plt.plot(statistic.hit_ratios_t, label=statistic.policy)
-
-    plt.ylabel(r"Hit ratio")
-    plt.xlabel(r"$T$", fontsize=15)
-    plt.legend(loc="lower left")
     plt.show()
 

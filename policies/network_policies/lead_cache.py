@@ -2,21 +2,17 @@ from typing import List
 
 import numpy as np
 
+from policies.network_policies.network_policy import NetworkPolicy
 from policies.network_policies.solvers.lead_cache_solver import get_opt_lead_cache, LeadCacheSolverParams
 
 
-class LeadCache:
+class LeadCache(NetworkPolicy):
     """
-    Regret-optimal caching policy for bi-partite networks with nonlinear reward functions.
+    Regret-optimal caching policy for bi-partite networks with non-linear reward functions.
     """
 
-    cache_count: int
-    client_cache_connections: List[List[int]]
     request_counts: np.ndarray
-    time: int
     max_degree: int
-    cache_size: int
-    configuration: np.ndarray
 
     def __init__(
             self,
@@ -26,13 +22,13 @@ class LeadCache:
             max_degree: int,
             cache_size: int
     ):
-        self.cache_count = cache_count
-        self.client_cache_connections = client_cache_connections
+        super().__init__(cache_count, client_cache_connections, catalog_size, cache_size)
         self.request_counts = np.ndarray((len(client_cache_connections), catalog_size))
-        self.time = 1
         self.max_degree = max_degree
-        self.cache_size = cache_size
-        self.configuration = np.zeros((cache_count, catalog_size))
+
+    @staticmethod
+    def get_name() -> str:
+        return "LeadCache"
 
     def update(self, requests: np.ndarray) -> None:
         """
@@ -41,8 +37,8 @@ class LeadCache:
         :param requests: clients array for requests, where the element at index c is the request by client c
         :return: None
         """
-        for client, request in enumerate(requests):
-            self.request_counts[client][request] += 1
+        super().update(requests)
+        self._update_counts(requests)
 
         learning_rate = (len(self.client_cache_connections) ** 3 / 4) * np.sqrt(
             self.time / (self.cache_size * self.cache_count)
@@ -66,4 +62,6 @@ class LeadCache:
             )
         )
 
-        self.time += 1
+    def _update_counts(self, requests: np.ndarray) -> None:
+        for client, request in enumerate(requests):
+            self.request_counts[client][round(request)] += 1

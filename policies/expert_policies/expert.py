@@ -1,12 +1,12 @@
-from policies.policy import Policy
+from policies.ftpl_policy import FTPLPolicy
 
 
 class Expert:
 
-    policy: Policy
+    policy: FTPLPolicy
     loss: float
 
-    def __init__(self, policy: Policy):
+    def __init__(self, policy: FTPLPolicy):
         self.policy = policy
         self.loss = 0
 

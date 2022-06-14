@@ -22,9 +22,5 @@ class SimulationStatistics(Statistics):
 
 
 @dataclass
-class HierarchicalSimulationStatistics(Statistics):
-    total_cost: float
-    costs: np.ndarray or None
-    hit_ratios_for_caches: np.ndarray
-    hit_ratios_t: np.ndarray or None
-
+class BiPartiteSimulationStatistics(Statistics):
+    rewards: np.ndarray

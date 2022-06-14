@@ -3,8 +3,9 @@ from typing import List
 
 import numpy as np
 
+from policies.expert_policies.expert import Expert
 from policies.expert_policies.expert_policy import ExpertPolicy
-from policies.policy import Policy
+from policies.ftpl_policy import FTPLPolicy
 
 
 def get_optimal_last_loss(previous_losses: np.ndarray) -> float:
@@ -18,8 +19,9 @@ def get_optimal_last_loss(previous_losses: np.ndarray) -> float:
 class IAWMPolicy(ExpertPolicy):
 
     weights: np.ndarray
+    current_expert: Expert
 
-    def __init__(self, capacity: int, policies: List[Policy]):
+    def __init__(self, capacity: int, policies: List[FTPLPolicy]):
         super().__init__(capacity, policies)
         self.weights = np.zeros(len(policies))
 
@@ -34,8 +36,8 @@ class IAWMPolicy(ExpertPolicy):
         previous_losses = np.array(list(map(lambda e: e.loss, self.experts)))
         super().update(request)
         self.weights = self.get_updated_weights(previous_losses)
-        chosen_expert = random.choices(self.experts, weights=self.weights)[0]
-        self.cache = chosen_expert.policy.cache
+        self.current_expert = random.choices(self.experts, weights=self.weights)[0]
+        self.cache = self.current_expert.policy.cache
 
     def get_updated_weights(self, previous_losses: np.ndarray) -> np.ndarray:
         optimal_last_loss = np.min(previous_losses)

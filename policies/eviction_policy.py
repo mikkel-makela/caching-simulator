@@ -15,10 +15,6 @@ class EvictionPolicy(Policy):
     Updates the cache with the new request.
     """
     def update(self, request: int) -> None:
-        if self.is_dummy():
-            # Cache is a dummy, do not execute logic
-            return
-
         super().update(request)
         if not self.is_present(request):
             if self.is_full():
@@ -55,8 +51,3 @@ class EvictionPolicy(Policy):
     """
     def learn(self, request: int) -> None:
         pass
-
-    def is_dummy(self) -> bool:
-        return self.cache.size == 0
-
-
