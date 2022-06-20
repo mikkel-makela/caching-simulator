@@ -31,12 +31,6 @@ class LeadCache(NetworkPolicy):
         return "LeadCache"
 
     def update(self, requests: np.ndarray) -> None:
-        """
-        Updates the cache configuration from new requests.
-
-        :param requests: clients array for requests, where the element at index c is the request by client c
-        :return: None
-        """
         super().update(requests)
         self._update_counts(requests)
 

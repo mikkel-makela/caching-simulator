@@ -41,8 +41,9 @@ def display_multi_level_statistics(statistics: List[BiPartiteSimulationStatistic
     for statistic in statistics:
         plt.plot(statistic.rewards, label=statistic.policy)
 
-    plt.ylabel(r"Reward")
+    plt.ylabel(r"$\frac{q_{T}}{T}$", rotation=0, labelpad=15, fontsize=20)
     plt.xlabel(r"$T$", fontsize=15)
     plt.legend(loc="upper left")
+    plt.ylim([0, max(statistics, key=lambda s: s.rewards[-1]).rewards[-1] * 1.5])
     plt.show()
 

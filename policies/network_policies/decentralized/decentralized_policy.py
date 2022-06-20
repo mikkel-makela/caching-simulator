@@ -12,12 +12,6 @@ class DecentralizedNetworkPolicy(NetworkPolicy):
     policies: List[Policy]
 
     def update(self, requests: np.ndarray) -> None:
-        """
-        Updates the cache configuration from new requests.
-
-        :param requests: clients array for requests, where the element at index c is the request by client c
-        :return: None
-        """
         super().update(requests)
         cache_requests_map: Dict[int, set[int]] = dict()
         for client, request in enumerate(requests):

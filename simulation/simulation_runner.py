@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, Future
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 
@@ -25,6 +25,36 @@ def _get_optimal_static_statistics(trace: np.ndarray, time_horizon: int, cache_s
         hit_ratio[time_horizon - 1],
         np.zeros(time_horizon),
         hit_ratio
+    )
+
+
+def _get_optimal_network_statistics(
+        traces: np.ndarray,
+        client_cache_connections: List[List[int]],
+        cache_size: int,
+        caches: int
+) -> BiPartiteSimulationStatistics:
+    time_horizon = traces[0].size
+    rewards = np.zeros(time_horizon)
+    cache_trace_map: Dict[int, List[int]] = dict()
+
+    for t in range(time_horizon):
+        for client in range(len(client_cache_connections)):
+            for cache in client_cache_connections[client]:
+                if cache not in cache_trace_map:
+                    cache_trace_map[cache] = []
+                cache_trace_map[cache].append(traces[client][t])
+
+        reward = 0
+        for cache in range(caches):
+            trace = np.array(cache_trace_map[cache])
+            reward += _get_optimal_static_configuration_hits(trace, cache_size, trace.size)
+
+        rewards[t] = reward / (t + 1)
+
+    return BiPartiteSimulationStatistics(
+        policy="OPT",
+        rewards=rewards
     )
 
 
@@ -65,7 +95,7 @@ def _execute_system_synchronously(policy: NetworkPolicy, data: BiPartiteDataset)
         for client in range(clients):
             requests[client] = data.traces[client][t]
         policy.update(requests)
-        rewards[t] = policy.reward
+        rewards[t] = policy.reward / (t + 1)
 
     return rewards
 
@@ -88,12 +118,6 @@ class SimulationRunner:
     _executor: ThreadPoolExecutor
 
     def __init__(self, threads: int = 1):
-        """
-        Initializes the runner with specified thread count. If concurrency is enabled, runs all clients in
-        concurrently in a bi-partite setting, but is unable to record system costs at each iteration.
-
-        :param threads: How many threads to allocate.
-        """
         assert threads >= 1
         self._executor = ThreadPoolExecutor(max_workers=threads)
 
@@ -123,5 +147,12 @@ class SimulationRunner:
             for policy in policies
         ]
 
-        return list(map(lambda f: f.result(), futures))
+        return list(map(lambda f: f.result(), futures)) + [
+            _get_optimal_network_statistics(
+                data.traces,
+                policies[0].client_cache_connections,
+                policies[0].cache_size,
+                len(policies)
+            )
+        ]
 

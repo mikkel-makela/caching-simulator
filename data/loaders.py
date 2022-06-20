@@ -75,25 +75,28 @@ def load_bipartite_traces() -> BiPartiteDataset:
         lambda file_name: load_online_cache_trace(file_name),
         [
             DataPath.OSCILLATOR,
+            DataPath.SN_OSCILLATOR,
             DataPath.CHANGING_OSCILLATOR,
             DataPath.CHANGING_POPULARITY_CATALOG,
             DataPath.FIXED_POPULARITY_CATALOG,
-            DataPath.SN_OSCILLATOR
         ]
     ))
     catalog_size = min(synthetic_datasets, key=lambda ds: ds.catalog_size).catalog_size
     for dataset in synthetic_datasets:
         dataset.trace = dataset.trace[dataset.trace <= catalog_size]
     time_horizon = min(synthetic_datasets, key=lambda ds: ds.trace.size).trace.size
+    fixed_a = synthetic_datasets[4].trace[:time_horizon]
+    fixed_b = synthetic_datasets[4].trace[time_horizon:time_horizon * 2]
     for dataset in synthetic_datasets:
         dataset.trace = dataset.trace[:time_horizon]
-    all_traces = np.array(
-        list(map(lambda ds: ds.trace, synthetic_datasets)) + [
-            load_movielens(DataPath.MOVIE_LENS, catalog_size, time_horizon).trace
-        ]
-    )
+
+    two_movie = load_movielens(DataPath.MOVIE_LENS, catalog_size, time_horizon * 2).trace
+    movie_a = two_movie[:time_horizon]
+    movie_b = two_movie[time_horizon:time_horizon * 2]
+
+    traces = np.array([fixed_a, fixed_b, movie_a, movie_b, synthetic_datasets[2].trace, synthetic_datasets[0].trace])
     return BiPartiteDataset(
         name="Synthetic + MovieLens",
         catalog_size=catalog_size + 1,
-        traces=all_traces
+        traces=traces
     )

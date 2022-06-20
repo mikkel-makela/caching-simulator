@@ -42,10 +42,7 @@ class NetworkPolicy:
 
     def _update_reward(self, requests: np.ndarray) -> None:
         for client, request in enumerate(requests):
-            if any(
-                    map(
-                        lambda connection: round(self.configuration[connection][round(request)]) == 1,
-                        self.client_cache_connections[client]
-                    )
-            ):
-                self.reward += 1
+            self.reward += len(list(filter(
+                lambda connection: round(self.configuration[connection][round(request)]) == 1,
+                self.client_cache_connections[client]
+            )))

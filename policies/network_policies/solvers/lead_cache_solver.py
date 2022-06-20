@@ -27,38 +27,11 @@ def get_opt_lead_cache(params: LeadCacheSolverParams) -> np.ndarray:
 
     def objective(cache_configuration: np.ndarray) -> float:
         cache_configuration = cache_configuration.reshape(cache_shape)
-
-        """
-        The objective function that we minimize.
-
-        :param cache_configuration: current cache configuration to use in the computation
-        :return: the function value
-        
-        TODO: How to make this more performant - think of what we are doing
-        
-        for every client, sum its z * 
-        
-        The hard part is computing z as one matrix
-        it is np.minimum(np.ones(clients, catalog), sum_of_configurations)
-        
-        """
         z = np.ones((len(params.client_cache_map), params.catalog_size))
         for i in range(len(params.client_cache_map)):
             z[i] = np.minimum(z[i], cache_configuration[params.client_cache_map[i]].sum(axis=0))
 
         return -np.sum(objective_constant * z)
-        #
-        # return -sum(
-        #     map(
-        #         lambda client: np.sum(
-        #             np.maximum(
-        #                 np.zeros(params.theta[client].size),
-        #                 params.theta[client]
-        #             ) * get_z_i(params.client_cache_map[client])
-        #         ),
-        #         range(len(params.client_cache_map))
-        #     )
-        # )
 
     def cache_size_constraint(cache: np.ndarray) -> float:
         """

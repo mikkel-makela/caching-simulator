@@ -4,7 +4,6 @@ from typing import List
 from policies.expert_policies.ftpl_policy import ExpertFTPLPolicy
 from policies.expert_policies.iawm_policy import IAWMPolicy
 from policies.ftpl_policy import FTPLPolicy
-from policies.policy import Policy
 
 
 def get_expert_ftpl_policy(
@@ -36,7 +35,7 @@ def get_ftpl_policies(
         catalog_size: int,
         time_horizon: int,
         discount_rates: List[float]
-) -> List[Policy]:
+) -> List[FTPLPolicy]:
     if 1.0 not in discount_rates:
         discount_rates.append(1.0)
     return list(map(lambda d: FTPLPolicy(cache_size, catalog_size, time_horizon, discount_rate=d), discount_rates))

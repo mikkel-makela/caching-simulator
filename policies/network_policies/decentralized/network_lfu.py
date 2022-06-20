@@ -18,4 +18,4 @@ class NetworkLFU(DecentralizedNetworkPolicy):
 
     @staticmethod
     def get_name() -> str:
-        return "LFU"
+        return "Network LFU"
